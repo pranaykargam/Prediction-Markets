@@ -6,6 +6,14 @@ import {PredictionMarketToken} from "./PredictionMarketToken.sol";
 
 contract PredictionMarket is Ownable {
     //////////////////////////
+    /// Types              ///
+    //////////////////////////
+    enum Outcome {
+        YES,
+        NO
+    }
+
+    //////////////////////////
     /// Errors             ///
     //////////////////////////
     error PredictionMarket__MustProvideETHForInitialLiquidity();
@@ -13,6 +21,9 @@ contract PredictionMarket is Ownable {
     error PredictionMarket__InvalidPercentageToLock();
     error PredictionMarket__InvalidInitialTokenValue();
     error PredictionMarket__TokenTransferFailed();
+    error PredictionMarket__InsufficientTokenReserve(Outcome outcome, uint256 requested);
+    error PredictionMarket__ETHTransferFailed();
+    error PredictionMarket__InsufficientETHCollateral();
 
     uint256 private constant PRECISION = 1e18;
 
@@ -29,6 +40,12 @@ contract PredictionMarket is Ownable {
     uint256 public s_lpTradingRevenue;
     PredictionMarketToken public immutable i_yesToken;
     PredictionMarketToken public immutable i_noToken;
+
+    //////////////////////////
+    /// Events             ///
+    //////////////////////////
+    event LiquidityAdded(address indexed provider, uint256 ethAmount, uint256 tokensAmount);
+    event LiquidityRemoved(address indexed provider, uint256 ethAmount, uint256 tokensBurned);
 
     //////////////////
     ////Constructor///
@@ -56,7 +73,7 @@ contract PredictionMarket is Ownable {
 
         i_oracle = _oracle;
         s_question = _question;
-        i_initialTokenValue = _initialTokenValue;
+        i_initialTokenValue = _initialTokenValue; 
         i_initialYesProbability = _initialYesProbability;
         i_percentageLocked = _percentageToLock;
 
@@ -78,6 +95,49 @@ contract PredictionMarket is Ownable {
         if (!success1 || !success2) {
             revert PredictionMarket__TokenTransferFailed();
         }
+    }
+
+    ///////////////////
+    /// Functions     ///
+    ///////////////////
+
+    function addLiquidity() external payable onlyOwner {
+        s_ethCollateral += msg.value;
+
+        uint256 tokensAmount = (msg.value * PRECISION) / i_initialTokenValue;
+
+        i_yesToken.mint(address(this), tokensAmount);
+        i_noToken.mint(address(this), tokensAmount);
+
+        emit LiquidityAdded(msg.sender, msg.value, tokensAmount);
+    }
+
+    function removeLiquidity(uint256 _ethToWithdraw) external onlyOwner {
+        if (_ethToWithdraw > s_ethCollateral) {
+            revert PredictionMarket__InsufficientETHCollateral();
+        }
+
+        uint256 amountTokenToBurn = (_ethToWithdraw * PRECISION) / i_initialTokenValue;
+
+        if (amountTokenToBurn > i_yesToken.balanceOf(address(this))) {
+            revert PredictionMarket__InsufficientTokenReserve(Outcome.YES, amountTokenToBurn);
+        }
+
+        if (amountTokenToBurn > i_noToken.balanceOf(address(this))) {
+            revert PredictionMarket__InsufficientTokenReserve(Outcome.NO, amountTokenToBurn);
+        }
+
+        s_ethCollateral -= _ethToWithdraw;
+
+        i_yesToken.burn(address(this), amountTokenToBurn);
+        i_noToken.burn(address(this), amountTokenToBurn);
+
+        (bool success,) = msg.sender.call{value: _ethToWithdraw}("");
+        if (!success) {
+            revert PredictionMarket__ETHTransferFailed();
+        }
+
+        emit LiquidityRemoved(msg.sender, _ethToWithdraw, amountTokenToBurn);
     }
 }
 
