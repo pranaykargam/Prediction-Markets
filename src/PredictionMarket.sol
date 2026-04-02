@@ -25,6 +25,7 @@ contract PredictionMarket is Ownable {
     error PredictionMarket__ETHTransferFailed();
     error PredictionMarket__InsufficientETHCollateral();
     error PredictionMarket__PredictionAlreadyReported();
+    error PredictionMarket__PredictionNotReported();
     error PredictionMarket__OnlyOracleCanReport();
 
     uint256 private constant PRECISION = 1e18;
@@ -51,6 +52,7 @@ contract PredictionMarket is Ownable {
     event LiquidityAdded(address indexed provider, uint256 ethAmount, uint256 tokensAmount);
     event LiquidityRemoved(address indexed provider, uint256 ethAmount, uint256 tokensBurned);
     event MarketReported(address indexed oracle, Outcome winningOutcome, address winningToken);
+    event MarketResolved(address indexed owner, uint256 totalEthSent);
 
     ///////////////////
     /// Modifiers    ///
@@ -58,6 +60,13 @@ contract PredictionMarket is Ownable {
     modifier predictionNotReported() {
         if (s_isReported) {
             revert PredictionMarket__PredictionAlreadyReported();
+        }
+        _;
+    }
+
+    modifier predictionReported() {
+        if (!s_isReported) {
+            revert PredictionMarket__PredictionNotReported();
         }
         _;
     }
@@ -164,6 +173,36 @@ contract PredictionMarket is Ownable {
         s_isReported = true;
 
         emit MarketReported(msg.sender, _winningOutcome, address(s_winningToken));
+    }
+
+    function resolveMarketAndWithdraw() external onlyOwner predictionReported returns (uint256 ethRedeemed) {
+        uint256 contractWinningTokens = s_winningToken.balanceOf(address(this));
+        if (contractWinningTokens > 0) {
+            ethRedeemed = (contractWinningTokens * i_initialTokenValue) / PRECISION;
+
+            if (ethRedeemed > s_ethCollateral) {
+                ethRedeemed = s_ethCollateral;
+            }
+
+            s_ethCollateral -= ethRedeemed;
+        }
+
+        uint256 totalEthToSend = ethRedeemed + s_lpTradingRevenue;
+
+        s_lpTradingRevenue = 0;
+
+        if (contractWinningTokens > 0) {
+            s_winningToken.burn(address(this), contractWinningTokens);
+        }
+
+        (bool success,) = msg.sender.call{value: totalEthToSend}("");
+        if (!success) {
+            revert PredictionMarket__ETHTransferFailed();
+        }
+
+        emit MarketResolved(msg.sender, totalEthToSend);
+
+        return ethRedeemed;
     }
 }
 
