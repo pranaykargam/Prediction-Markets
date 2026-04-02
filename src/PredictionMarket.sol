@@ -24,6 +24,8 @@ contract PredictionMarket is Ownable {
     error PredictionMarket__InsufficientTokenReserve(Outcome outcome, uint256 requested);
     error PredictionMarket__ETHTransferFailed();
     error PredictionMarket__InsufficientETHCollateral();
+    error PredictionMarket__PredictionAlreadyReported();
+    error PredictionMarket__OnlyOracleCanReport();
 
     uint256 private constant PRECISION = 1e18;
 
@@ -38,6 +40,8 @@ contract PredictionMarket is Ownable {
     string public s_question;
     uint256 public s_ethCollateral;
     uint256 public s_lpTradingRevenue;
+    PredictionMarketToken public s_winningToken;
+    bool public s_isReported;
     PredictionMarketToken public immutable i_yesToken;
     PredictionMarketToken public immutable i_noToken;
 
@@ -46,6 +50,17 @@ contract PredictionMarket is Ownable {
     //////////////////////////
     event LiquidityAdded(address indexed provider, uint256 ethAmount, uint256 tokensAmount);
     event LiquidityRemoved(address indexed provider, uint256 ethAmount, uint256 tokensBurned);
+    event MarketReported(address indexed oracle, Outcome winningOutcome, address winningToken);
+
+    ///////////////////
+    /// Modifiers    ///
+    ///////////////////
+    modifier predictionNotReported() {
+        if (s_isReported) {
+            revert PredictionMarket__PredictionAlreadyReported();
+        }
+        _;
+    }
 
     //////////////////
     ////Constructor///
@@ -101,7 +116,7 @@ contract PredictionMarket is Ownable {
     /// Functions     ///
     ///////////////////
 
-    function addLiquidity() external payable onlyOwner {
+    function addLiquidity() external payable onlyOwner predictionNotReported {
         s_ethCollateral += msg.value;
 
         uint256 tokensAmount = (msg.value * PRECISION) / i_initialTokenValue;
@@ -112,7 +127,7 @@ contract PredictionMarket is Ownable {
         emit LiquidityAdded(msg.sender, msg.value, tokensAmount);
     }
 
-    function removeLiquidity(uint256 _ethToWithdraw) external onlyOwner {
+    function removeLiquidity(uint256 _ethToWithdraw) external onlyOwner predictionNotReported {
         if (_ethToWithdraw > s_ethCollateral) {
             revert PredictionMarket__InsufficientETHCollateral();
         }
@@ -138,6 +153,17 @@ contract PredictionMarket is Ownable {
         }
 
         emit LiquidityRemoved(msg.sender, _ethToWithdraw, amountTokenToBurn);
+    }
+
+    function report(Outcome _winningOutcome) external predictionNotReported {
+        if (msg.sender != i_oracle) {
+            revert PredictionMarket__OnlyOracleCanReport();
+        }
+
+        s_winningToken = _winningOutcome == Outcome.YES ? i_yesToken : i_noToken;
+        s_isReported = true;
+
+        emit MarketReported(msg.sender, _winningOutcome, address(s_winningToken));
     }
 }
 
