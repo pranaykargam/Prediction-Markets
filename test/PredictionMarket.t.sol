@@ -61,7 +61,7 @@ contract PredictionMarketTest is Test {
         assertEq(address(market.s_winningToken()), address(market.i_yesToken()));
     }
 
-    /// @dev Name contains `removeLiquidity` so `forge test --match-test removeLiquidity` matches.
+ 
     function test_removeLiquidity_withdrawsEth() public {
         uint256 beforeBal = owner.balance;
 
