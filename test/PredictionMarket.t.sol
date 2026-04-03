@@ -71,4 +71,32 @@ contract PredictionMarketTest is Test {
         assertEq(market.s_ethCollateral(), 0.9 ether);
         assertEq(owner.balance, beforeBal + 0.1 ether);
     }
+
+    function test_redeemWinningTokens() public {
+        address user = makeAddr("user");
+        vm.deal(user, 1 ether);
+
+        uint256 tokensToBuy = 0.5 ether; // 0.5e18 tokens
+        uint256 ethNeeded = market.getBuyPriceInEth(PredictionMarket.Outcome.YES, tokensToBuy);
+
+        // User buys YES tokens
+        vm.prank(user);
+        market.buyTokensWithETH{value: ethNeeded}(PredictionMarket.Outcome.YES, tokensToBuy);
+
+        // Oracle reports YES as winner
+        vm.prank(oracle);
+        market.report(PredictionMarket.Outcome.YES);
+
+        uint256 userBalanceBefore = user.balance;
+        uint256 winningTokensBefore = market.i_yesToken().balanceOf(user);
+
+        // User redeems winning tokens
+        vm.prank(user);
+        market.redeemWinningTokens(winningTokensBefore);
+
+        uint256 ethReceived = (winningTokensBefore * 1e18) / 1e18; // initialTokenValue is 1e18, PRECISION is 1e18
+        assertEq(user.balance, userBalanceBefore + ethReceived);
+        assertEq(market.i_yesToken().balanceOf(user), 0);
+        assertEq(market.s_ethCollateral(), 1 ether - ethReceived); // initial 1 ether minus redeemed
+    }
 }
