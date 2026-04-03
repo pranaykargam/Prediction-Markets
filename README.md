@@ -77,9 +77,6 @@ In plain English:
 - more demand for `NO` pushes the `NO` price up
 
 ## Project Structure
-
-
-.
 ├── src
 │   ├── PredictionMarket.sol
 │   └── PredictionMarketToken.sol
@@ -103,8 +100,6 @@ The test suite currently covers:
 - This project is a single-market implementation, not a factory for many markets.
 - The current deployment script uses the deployer as both owner and oracle for simplicity.
 - The sample question in the deployment script should be updated before real deployment.
-
-
 
 Challenge link:
 - https://speedrunethereum.com/challenge/prediction-markets
