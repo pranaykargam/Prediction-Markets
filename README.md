@@ -72,9 +72,7 @@ probability = tokensSold / totalTokensSold
 
 That probability is then used to estimate the ETH cost to buy or sell tokens.
 
-In plain English:
-- more demand for `YES` pushes the `YES` price up
-- more demand for `NO` pushes the `NO` price up
+
 
 ## Project Structure
 ├── src
@@ -95,11 +93,7 @@ The test suite currently covers:
 - redeeming winning tokens
 - owner withdrawal on market resolution
 
-## Notes
 
-- This project is a single-market implementation, not a factory for many markets.
-- The current deployment script uses the deployer as both owner and oracle for simplicity.
-- The sample question in the deployment script should be updated before real deployment.
 
 Challenge link:
 - https://speedrunethereum.com/challenge/prediction-markets
