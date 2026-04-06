@@ -41,8 +41,8 @@ Features:
 - a percentage of tokens to lock for the liquidity provider
 
 2. The market deploys two ERC20 tokens:
-- `YES`
-- `NO`
+`YES`
+`NO`
 
 3. Traders buy and sell these tokens before the result is known.
 
@@ -92,7 +92,6 @@ The test suite currently covers:
 - resolving only after reporting
 - redeeming winning tokens
 - owner withdrawal on market resolution
-
 
 
 Challenge link:
