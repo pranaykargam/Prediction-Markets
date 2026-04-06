@@ -364,5 +364,25 @@ contract PredictionMarketTest is Test {
         market.redeemWinningTokens(0.1 ether);
     }
 
-   
+    function _deployMarket(
+        uint256 initialLiquidity,
+        uint256 initialTokenValue,
+        uint8 initialYesProbability,
+        uint8 percentageToLock
+    ) internal returns (PredictionMarket deployedMarket) {
+        vm.prank(owner);
+        deployedMarket = new PredictionMarket{value: initialLiquidity}(
+            owner, oracle, "Will it rain?", initialTokenValue, initialYesProbability, percentageToLock
+        );
+    }
+
+    function _buyTokens(address buyer, PredictionMarket.Outcome outcome, uint256 amountToBuy)
+        internal
+        returns (uint256 ethNeeded)
+    {
+        ethNeeded = market.getBuyPriceInEth(outcome, amountToBuy);
+
+        vm.prank(buyer);
+        market.buyTokensWithETH{value: ethNeeded}(outcome, amountToBuy);
+    }
 }
