@@ -201,7 +201,7 @@ contract PredictionMarketTest is Test {
 
     // Verifies buying reverts when the caller sends the wrong ETH amount for the quoted trade.
     function test_buyTokensWithETH_revertsWhenEthAmountIsWrong() public {
-        vm.prank(user);
+        vm.prank(user); 
         vm.expectRevert(PredictionMarket.PredictionMarket__MustSendExactETHAmount.selector);
         market.buyTokensWithETH{value: 1 wei}(PredictionMarket.Outcome.YES, 0.1 ether);
     }
