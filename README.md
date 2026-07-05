@@ -4,6 +4,8 @@ A simple Solidity prediction market built with Foundry for the Speedrun Ethereum
 
 <img src = "./images/image01.png">
 
+<img src = "./images/image2.png">
+
 This project lets a market owner create a yes/no market, seed initial ETH liquidity, let traders buy and sell outcome tokens, and let an oracle report the final result. After resolution, holders of the winning token can redeem ETH and the liquidity provider can withdraw remaining collateral plus trading revenue.
 
 ## Contracts
