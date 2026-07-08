@@ -1,23 +1,41 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity ^0.5.11;
 
-import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-contract PredictionMarketToken is ERC20, Ownable {
-    constructor(string memory name, string memory symbol, address initialOwner, uint256 initialSupply)
-        ERC20(name, symbol)
-        Ownable(initialOwner)
-    {
-        _mint(initialOwner, initialSupply);
+/// @title Prediction market outcome token
+/// @notice ERC20 YES / NO token minted and burned only by the market contract.
+contract PredictionMarketToken is ERC20 {
+    address public minter;
+
+    event MinterUpdated(address indexed previousMinter, address indexed newMinter);
+
+    modifier onlyMinter() {
+        require(msg.sender == minter, "PredictionMarketToken: only minter");
+        _;
     }
 
-    function mint(address to, uint256 amount) external onlyOwner {
+    constructor(
+        string memory name_,
+        string memory symbol_,
+        address initialMinter_
+    ) ERC20(name_, symbol_) {
+        require(initialMinter_ != address(0), "PredictionMarketToken: zero minter");
+        minter = initialMinter_;
+        emit MinterUpdated(address(0), initialMinter_);
+    }
+
+    function setMinter(address newMinter) external onlyMinter {
+        require(newMinter != address(0), "PredictionMarketToken: zero minter");
+        emit MinterUpdated(minter, newMinter);
+        minter = newMinter;
+    }
+
+    function mint(address to, uint256 amount) external onlyMinter {
         _mint(to, amount);
     }
 
-    function burn(address from, uint256 amount) external onlyOwner {
+    function burn(address from, uint256 amount) external onlyMinter {
         _burn(from, amount);
     }
 }
-
