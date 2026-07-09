@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.5.11;
+pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -192,7 +192,7 @@ contract AMMPool {
         uint256 amountIn,
         uint256 reserveIn,
         uint256 reserveOut
-    ) private pure returns (uint256) {
+    ) private view returns (uint256) {
         require(amountIn > 0, "AMMPool: zero input");
         require(reserveIn > 0 && reserveOut > 0, "AMMPool: empty reserves");
         uint256 amountInWithFee = amountIn * (10000 - feeBps);

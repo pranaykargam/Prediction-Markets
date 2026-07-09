@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.5.11;
+pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
-import "../utils/AccessControlRoles.sol";
-import "./IResultOracle.sol";
-import "../factory/MatchRegistry.sol";
-import "../core/PredictionMarket.sol";
+import "./AccessControlRoles.sol";
+import "../Interfaces/IResultOracle.sol";
+import "./FifaTournamentRegistry.sol";
+import "./FifaPredictionMarket.sol";
 
 /// @title Chainlink result oracle
 /// @notice Emits requests and allows authorized Chainlink node to push match results.

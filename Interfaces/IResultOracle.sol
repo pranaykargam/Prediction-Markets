@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.5.11;
+pragma solidity ^0.8.20;
 
 /// @title Result oracle interface
 /// @notice Defines the oracle rails for requesting and reporting match outcomes.

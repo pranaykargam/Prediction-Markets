@@ -1,11 +1,12 @@
-  // SPDX-License-Identifier: MIT
-pragma solidity ^0.5.11;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "../utils/AccessControlRoles.sol";
-import "../factory/MatchRegistry.sol";
-import "../core/PredictionMarket.sol";
+import "./AccessControlRoles.sol";
+import "./FifaTournamentRegistry.sol";
+import "./FifaPredictionMarket.sol";
 
 /// @notice Minimal interface for router-style FIFA oracle adapters.
 interface IFifaOracle {
@@ -58,7 +59,7 @@ contract FifaOracleRouter is AccessControl, AccessControlRoles, IFifaOracle {
         require(outcome == 0 || outcome == 1, "FifaOracleRouter: invalid outcome");
 
         bytes32 digest = keccak256(abi.encodePacked(address(this), block.chainid, matchId, outcome));
-        bytes32 ethDigest = digest.toEthSignedMessageHash();
+        bytes32 ethDigest = _toEthSignedMessageHash(digest);
 
         address signer = ethDigest.recover(signature);
         require(signer != address(0), "FifaOracleRouter: invalid signature");
@@ -78,6 +79,10 @@ contract FifaOracleRouter is AccessControl, AccessControlRoles, IFifaOracle {
         address marketAddr = registry.marketFor(matchId);
         require(marketAddr != address(0), "FifaOracleRouter: unknown match");
         PredictionMarket(marketAddr).reportOutcome(outcome);
+    }
+
+    function _toEthSignedMessageHash(bytes32 digest) private pure returns (bytes32) {
+        return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", digest));
     }
 
     /// @notice Admin can add an oracle node allowed to call submitResult directly.

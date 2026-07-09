@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.5.11;
+pragma solidity ^0.8.20;
 
 /// @title Match registry
 /// @notice Stores match metadata and market address for each World Cup match.
@@ -16,6 +16,7 @@ contract MatchRegistry {
     uint256[] public matchIds;
 
     event MatchRegistered(uint256 indexed matchId, address indexed market);
+    event FactoryUpdated(address indexed previousFactory, address indexed newFactory);
 
     modifier onlyFactory() {
         require(msg.sender == factory, "MatchRegistry: only factory");
@@ -25,6 +26,12 @@ contract MatchRegistry {
     constructor(address _factory) {
         require(_factory != address(0), "MatchRegistry: zero factory");
         factory = _factory;
+    }
+
+    function setFactory(address newFactory) external onlyFactory {
+        require(newFactory != address(0), "MatchRegistry: zero factory");
+        emit FactoryUpdated(factory, newFactory);
+        factory = newFactory;
     }
 
     function registerMatch(
