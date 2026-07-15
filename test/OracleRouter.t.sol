@@ -46,7 +46,9 @@ contract FifaOracleRouterTest is Test {
         pool.setMarket(address(market));
         yes.setMinter(address(market));
         no.setMinter(address(market));
-        registry.registerMatch(42, "Home", "Away", uint64(block.timestamp + 3600), address(market));
+        uint64 kickoff = uint64(block.timestamp + 3600);
+        registry.registerMatch(42, "Home", "Away", kickoff, address(market));
+        vm.warp(kickoff);
         market.closeMarket();
     }
 

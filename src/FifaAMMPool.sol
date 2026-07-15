@@ -2,10 +2,13 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "../Interfaces/IAMMPool.sol";
 
 /// @title AMM pool for prediction market outcome tokens
 /// @notice Handles liquidity, swaps, and winner payout using USDC / YES / NO.
-contract AMMPool {
+contract AMMPool is IAMMPool {
+    using SafeERC20 for IERC20;
     address public market;
     IERC20 public immutable usdc;
     IERC20 public immutable yesToken;
@@ -105,9 +108,9 @@ contract AMMPool {
         lpShares[provider] -= shares;
         lpTotalSupply -= shares;
 
-        require(usdc.transfer(provider, usdcOut), "AMMPool: usdc transfer failed");
-        require(yesToken.transfer(provider, yesOut), "AMMPool: yes transfer failed");
-        require(noToken.transfer(provider, noOut), "AMMPool: no transfer failed");
+        usdc.safeTransfer(provider, usdcOut);
+        yesToken.safeTransfer(provider, yesOut);
+        noToken.safeTransfer(provider, noOut);
 
         emit LiquidityRemoved(provider, usdcOut, yesOut, noOut);
     }
@@ -123,7 +126,7 @@ contract AMMPool {
             yesToken.balanceOf(address(this))
         );
         require(yesOut >= minYesOut, "AMMPool: slippage yes");
-        require(yesToken.transfer(recipient, yesOut), "AMMPool: yes transfer failed");
+        yesToken.safeTransfer(recipient, yesOut);
 
         emit Swap(address(usdc), recipient, address(yesToken), usdcAmount, yesOut);
     }
@@ -139,7 +142,7 @@ contract AMMPool {
             noToken.balanceOf(address(this))
         );
         require(noOut >= minNoOut, "AMMPool: slippage no");
-        require(noToken.transfer(recipient, noOut), "AMMPool: no transfer failed");
+        noToken.safeTransfer(recipient, noOut);
 
         emit Swap(address(usdc), recipient, address(noToken), usdcAmount, noOut);
     }
@@ -155,7 +158,7 @@ contract AMMPool {
             usdc.balanceOf(address(this))
         );
         require(usdcOut >= minUsdcOut, "AMMPool: slippage usdc");
-        require(usdc.transfer(recipient, usdcOut), "AMMPool: usdc transfer failed");
+        usdc.safeTransfer(recipient, usdcOut);
 
         emit Swap(address(yesToken), recipient, address(usdc), yesAmount, usdcOut);
     }
@@ -171,7 +174,7 @@ contract AMMPool {
             usdc.balanceOf(address(this))
         );
         require(usdcOut >= minUsdcOut, "AMMPool: slippage usdc");
-        require(usdc.transfer(recipient, usdcOut), "AMMPool: usdc transfer failed");
+        usdc.safeTransfer(recipient, usdcOut);
 
         emit Swap(address(noToken), recipient, address(usdc), noAmount, usdcOut);
     }
@@ -183,7 +186,7 @@ contract AMMPool {
     ) external onlyMarket {
         require(tokenAmount > 0, "AMMPool: zero amount");
         require(usdc.balanceOf(address(this)) >= tokenAmount, "AMMPool: insufficient usdc");
-        require(usdc.transfer(recipient, tokenAmount), "AMMPool: payout failed");
+        usdc.safeTransfer(recipient, tokenAmount);
 
         emit WinnerPaid(recipient, yesWinner, tokenAmount, tokenAmount);
     }

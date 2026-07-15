@@ -2,13 +2,17 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./FifaAMMPool.sol";
 import "./PredictionMarketToken.sol";
 import "../Interfaces/IResultOracle.sol";
+import "../Interfaces/IAMMPool.sol";
 
 /// @title Prediction market contract
 /// @notice Manages lifecycle, trading, oracle settlement, and redemption.
-contract PredictionMarket {
+contract PredictionMarket is ReentrancyGuard {
+    using SafeERC20 for IERC20;
     enum MarketState {
         OPEN,
         CLOSED,
@@ -19,7 +23,7 @@ contract PredictionMarket {
     IERC20 public immutable usdc;
     PredictionMarketToken public immutable yesToken;
     PredictionMarketToken public immutable noToken;
-    AMMPool public immutable pool;
+    IAMMPool public immutable pool;
     IResultOracle public immutable resultOracle;
 
     uint256 public immutable matchId;
@@ -42,7 +46,7 @@ contract PredictionMarket {
     }
 
     modifier onlyWhenOpen() {
-        require(state == MarketState.OPEN, "PredictionMarket: market not open");
+        require(state == MarketState.OPEN && block.timestamp < kickoffTime, "PredictionMarket: market not open");
         _;
     }
 
@@ -75,7 +79,7 @@ contract PredictionMarket {
         usdc = IERC20(usdcAddress);
         yesToken = PredictionMarketToken(yesTokenAddress);
         noToken = PredictionMarketToken(noTokenAddress);
-        pool = AMMPool(poolAddress);
+        pool = IAMMPool(poolAddress);
         resultOracle = IResultOracle(oracleAddress);
 
         matchId = _matchId;
@@ -85,23 +89,27 @@ contract PredictionMarket {
         state = MarketState.OPEN;
     }
 
-    function buyYesWithUsdc(uint256 usdcAmount, uint256 minYesOut) external onlyWhenOpen {
-        require(usdc.transferFrom(msg.sender, address(pool), usdcAmount), "PredictionMarket: usdc transfer failed");
+    function buyYesWithUsdc(uint256 usdcAmount, uint256 minYesOut) external nonReentrant onlyWhenOpen {
+        require(usdcAmount > 0, "PredictionMarket: zero amount");
+        usdc.safeTransferFrom(msg.sender, address(pool), usdcAmount);
         pool.swapUsdcForYes(usdcAmount, minYesOut, msg.sender);
     }
 
-    function buyNoWithUsdc(uint256 usdcAmount, uint256 minNoOut) external onlyWhenOpen {
-        require(usdc.transferFrom(msg.sender, address(pool), usdcAmount), "PredictionMarket: usdc transfer failed");
+    function buyNoWithUsdc(uint256 usdcAmount, uint256 minNoOut) external nonReentrant onlyWhenOpen {
+        require(usdcAmount > 0, "PredictionMarket: zero amount");
+        usdc.safeTransferFrom(msg.sender, address(pool), usdcAmount);
         pool.swapUsdcForNo(usdcAmount, minNoOut, msg.sender);
     }
 
-    function sellYesForUsdc(uint256 yesAmount, uint256 minUsdcOut) external onlyWhenOpen {
-        require(yesToken.transferFrom(msg.sender, address(pool), yesAmount), "PredictionMarket: yes transfer failed");
+    function sellYesForUsdc(uint256 yesAmount, uint256 minUsdcOut) external nonReentrant onlyWhenOpen {
+        require(yesAmount > 0, "PredictionMarket: zero amount");
+        IERC20(address(yesToken)).safeTransferFrom(msg.sender, address(pool), yesAmount);
         pool.swapYesForUsdc(yesAmount, minUsdcOut, msg.sender);
     }
 
-    function sellNoForUsdc(uint256 noAmount, uint256 minUsdcOut) external onlyWhenOpen {
-        require(noToken.transferFrom(msg.sender, address(pool), noAmount), "PredictionMarket: no transfer failed");
+    function sellNoForUsdc(uint256 noAmount, uint256 minUsdcOut) external nonReentrant onlyWhenOpen {
+        require(noAmount > 0, "PredictionMarket: zero amount");
+        IERC20(address(noToken)).safeTransferFrom(msg.sender, address(pool), noAmount);
         pool.swapNoForUsdc(noAmount, minUsdcOut, msg.sender);
     }
 
@@ -109,8 +117,11 @@ contract PredictionMarket {
         uint256 usdcAmount,
         uint256 yesAmount,
         uint256 noAmount
-    ) external onlyWhenOpen {
-        require(usdc.transferFrom(msg.sender, address(pool), usdcAmount), "PredictionMarket: usdc transfer failed");
+    ) external nonReentrant onlyWhenOpen {
+        require(usdcAmount > 0 && yesAmount > 0, "PredictionMarket: zero liquidity");
+        require(yesAmount == noAmount, "PredictionMarket: unmatched outcomes");
+        require(usdcAmount >= yesAmount, "PredictionMarket: insufficient collateral");
+        usdc.safeTransferFrom(msg.sender, address(pool), usdcAmount);
         yesToken.mint(address(pool), yesAmount);
         noToken.mint(address(pool), noAmount);
         pool.addLiquidity(msg.sender, usdcAmount, yesAmount, noAmount);
@@ -118,7 +129,7 @@ contract PredictionMarket {
         emit LiquidityAdded(msg.sender, usdcAmount, yesAmount, noAmount);
     }
 
-    function removeLiquidity(uint256 lpShares) external {
+    function removeLiquidity(uint256 lpShares) external nonReentrant onlyWhenOpen {
         require(lpShares > 0, "PredictionMarket: zero shares");
         pool.removeLiquidity(msg.sender, lpShares);
         emit LiquidityRemoved(msg.sender, lpShares);
@@ -126,7 +137,7 @@ contract PredictionMarket {
 
     function closeMarket() external {
         require(state == MarketState.OPEN, "PredictionMarket: not open");
-        require(block.timestamp < kickoffTime, "PredictionMarket: kickoff passed");
+        require(block.timestamp >= kickoffTime, "PredictionMarket: kickoff not reached");
         state = MarketState.CLOSED;
         emit MarketClosed(kickoffTime);
     }
@@ -139,7 +150,7 @@ contract PredictionMarket {
         emit OutcomeReported(matchId, outcome);
     }
 
-    function redeemWinningTokens(uint256 amount) external onlyAfterReport {
+    function redeemWinningTokens(uint256 amount) external nonReentrant onlyAfterReport {
         require(amount > 0, "PredictionMarket: zero amount");
 
         if (winningOutcome == 1) {

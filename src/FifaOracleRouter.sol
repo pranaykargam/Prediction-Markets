@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "./AccessControlRoles.sol";
 import "./FifaTournamentRegistry.sol";
 import "./FifaPredictionMarket.sol";
+import "../Interfaces/IPredictionMarket.sol";
 
 /// @notice Minimal interface for router-style FIFA oracle adapters.
 interface IFifaOracle {
@@ -78,7 +79,7 @@ contract FifaOracleRouter is AccessControl, AccessControlRoles, IFifaOracle {
     function _forwardResult(uint256 matchId, uint8 outcome) internal {
         address marketAddr = registry.marketFor(matchId);
         require(marketAddr != address(0), "FifaOracleRouter: unknown match");
-        PredictionMarket(marketAddr).reportOutcome(outcome);
+        IPredictionMarket(marketAddr).reportOutcome(outcome);
     }
 
     function _toEthSignedMessageHash(bytes32 digest) private pure returns (bytes32) {

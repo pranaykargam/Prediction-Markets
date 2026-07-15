@@ -2,10 +2,11 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "../Interfaces/IOutcomeToken.sol";
 
 /// @title Prediction market outcome token
 /// @notice ERC20 YES / NO token minted and burned only by the market contract.
-contract PredictionMarketToken is ERC20 {
+contract PredictionMarketToken is ERC20, IOutcomeToken {
     address public minter;
 
     event MinterUpdated(address indexed previousMinter, address indexed newMinter);
