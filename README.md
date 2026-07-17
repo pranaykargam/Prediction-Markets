@@ -165,12 +165,6 @@ Security pointers (non-exhaustive):
 - Consider timelocks, multisigs, or governance for role management.
 - Audit the math for edge cases (zero reserves, rounding, fee calculations).
 
-## Related reading
 
-- Foundry book — https://book.getfoundry.sh/
-- OpenZeppelin Contracts — https://github.com/OpenZeppelin/openzeppelin-contracts
-- Chainlink documentation — https://docs.chain.link/
-- Uniswap V2 constant product AMM — https://uniswap.org/docs/v2/
-- ECDSA signature patterns — https://docs.openzeppelin.com/contracts/4.x/api/utils#ECDSA
 
 
