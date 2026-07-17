@@ -1,7 +1,7 @@
 
 # Prediction Markets — World Cup AMM-style yes/no markets ⚽️📈
 
-This repository implements a small prediction-market stack (built with Foundry) that demonstrates how to deploy per-match yes/no markets, an AMM for outcome-token swaps, tokenized outcome shares, and oracle adapters for reporting results. The code was written for the Speedrun Ethereum / prediction markets challenge but is organized as a reusable minimal stack.
+ Implementing  a small prediction-market stack (built with Foundry) that demonstrates how to deploy per-match yes/no markets, an AMM for outcome-token swaps, tokenized outcome shares, and oracle adapters for reporting results. The code was written for the Speedrun Ethereum / prediction markets challenge but is organized as a reusable minimal stack.
 
 Preview
 <img src="./images/image01.png" alt="market diagram" />
