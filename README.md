@@ -20,6 +20,7 @@ Quick links
 - OpenZeppelin ERC20 & AccessControl: https://docs.openzeppelin.com/
 - Chainlink oracles: https://docs.chain.link/
 - AMM constant-product math (Uniswap v2): https://uniswap.org/docs/v2/
+- https://zengo.com/blog/predictions/how-to-bet-on-the-2026-fifa-world-cup/
 
 ## Project overview
 
