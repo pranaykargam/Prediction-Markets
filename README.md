@@ -5,7 +5,7 @@
 
 Preview
 <img src="./images/image01.png" alt="market diagram" />
-<img src="./images/image02.png" alt="flow" />
+<img src="./images/image03.png" alt="flow" />
 
 Highlights
 - Per-match markets with dedicated YES/NO ERC20 outcome tokens (`PredictionMarketToken`)
